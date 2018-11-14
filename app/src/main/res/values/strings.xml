@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Kích hoạt SIM</string>
+    <string name="phone_number_activation">Số điện thoại gọi để kích hoạt</string>
+    <string name="phone_numbers_sms">Số điện thoại để gửi tin nhắn (xxx; xxx)</string>
+    <string name="sms_content">Nội dung tin nhắn</string>
+    <string name="activate">Kích hoạt</string>
+    <string name="send_message">Gửi tin nhắn</string>
+    <string name="pattern_name">Tên pattern</string>
+    <string name="pattern_content">Nội dung pattern</string>
+    <string name="add">Thêm</string>
+    <string name="save">Lưu</string>
+    <string name="config">Cấu hình</string>
+    <string name="wrong_pattern">Sai định dạng pattern</string>
+    <string name="wrong_name_pattern">Tên pattern không được rỗng</string>
+</resources>

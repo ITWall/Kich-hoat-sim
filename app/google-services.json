@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "472995760486",
+    "firebase_url": "https://kichhoatsim-c36ed.firebaseio.com",
+    "project_id": "kichhoatsim-c36ed",
+    "storage_bucket": "kichhoatsim-c36ed.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:472995760486:android:eecb83d2d438987a",
+        "android_client_info": {
+          "package_name": "com.viettel.tungns.kichhoatsim"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "472995760486-il4f35flhgjt81kp48c1s53d0g218m8d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEnU88zSMOrSCpp5Gx7ntWxrBnkBNNJ4w"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
