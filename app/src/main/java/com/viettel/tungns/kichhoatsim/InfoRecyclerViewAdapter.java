@@ -9,27 +9,32 @@ import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
 public class InfoRecyclerViewAdapter extends RecyclerView.Adapter<InfoRecyclerViewAdapter.ViewHolder>{
     private SimInfo simInfo;
     private Context context;
-    private OnItemClick onItemClick;
-    private ArrayList<String> listKey;
+    private ArrayList<ConfigParameter> listKey;
 
     public InfoRecyclerViewAdapter(SimInfo simInfo, Context context) {
         this.simInfo = simInfo;
         this.context = context;
-        if (context instanceof OnItemClick) {
-            this.onItemClick = (OnItemClick) context;
-        }
         listKey = new ArrayList<>();
         for (Map.Entry entry: simInfo.getMapInfo().entrySet()) {
-            listKey.add((String) entry.getKey());
+            listKey.add((ConfigParameter) entry.getKey());
         }
+        Collections.sort(listKey, new Comparator<ConfigParameter>() {
+            @Override
+            public int compare(ConfigParameter c0, ConfigParameter c1) {
+                return c0.getPosition() - c1.getPosition();
+            }
+        });
     }
 
     @Override
@@ -40,7 +45,7 @@ public class InfoRecyclerViewAdapter extends RecyclerView.Adapter<InfoRecyclerVi
 
     @Override
     public void onBindViewHolder(InfoRecyclerViewAdapter.ViewHolder holder, final int position) {
-        holder.mTvNameInfo.setText(listKey.get(position));
+        holder.mTvNameInfo.setText(listKey.get(position).getName());
         holder.mSpnContentInfo.setAdapter(getAdapterSpinner(simInfo.getMapInfo().get(listKey.get(position))));
     }
 
@@ -64,5 +69,9 @@ public class InfoRecyclerViewAdapter extends RecyclerView.Adapter<InfoRecyclerVi
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, listChoice);
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_list_item_single_choice);
         return arrayAdapter;
+    }
+
+    public SimInfo getSimInfo() {
+        return simInfo;
     }
 }

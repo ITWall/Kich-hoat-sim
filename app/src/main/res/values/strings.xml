@@ -12,4 +12,6 @@
     <string name="config">Cấu hình</string>
     <string name="wrong_pattern">Sai định dạng pattern</string>
     <string name="wrong_name_pattern">Tên pattern không được rỗng</string>
+    <string name="wrong_config">Sai định dạng config</string>
+    <string name="do_command">Thực hiện</string>
 </resources>

@@ -12,18 +12,19 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,17 +40,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnItemClick {
     private ImageView mIvPickImage;
     private RecyclerView mRvSimInfo;
     private static final int REQUEST_PICK_IMAGE = 232;
     private static final int REQUEST_PERMISSION = 10;
-    private Button mBtnCallActivate;
-    private Button mBtnSendMesage;
-    private Config config;
+    private Button mBtnDoCommand;
+    private List<ConfigParameter> configParameterList;
+    private List<Command> configCommandList;
+    public static final String CONFIG_PARAMETER_LIST = "ConfigParameterList";
+    public static final String CONFIG_COMMAND_LIST = "ConfigCommandList";
+    private SimInfo simInfo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,34 +73,50 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initData() {
-        SharedPreferences sharedPreferences = getSharedPreferences("config", MODE_PRIVATE);
-        if (sharedPreferences.getString("config", "").equals("")) {
-            Toast.makeText(this, "config is empty", Toast.LENGTH_SHORT).show();
-            config = new Config();
-            config.setPhoneNumberCall("900");
-            config.setSmsContent("abc");
-            config.getSmsPhoneNumberList().add("12345");
-            config.getSmsPhoneNumberList().add("54321");
-            config.getScanPatternList().add(new ScanPattern("Số thuê bao", "(\\d){10}"));
-            config.getScanPatternList().add(new ScanPattern("Số seri SIM", "(\\d){19}"));
-            config.getScanPatternList().add(new ScanPattern("PUK", "(\\d){8}"));
-            config.getScanPatternList().add(new ScanPattern("PIN", "(\\d){4}"));
-            String configJSON = new Gson().toJson(config);
-            sharedPreferences.edit().putString("config", configJSON).apply();
+        SharedPreferences sharedPreferences = getSharedPreferences(CONFIG_PARAMETER_LIST, MODE_PRIVATE);
+        SharedPreferences sharedPreferencesCommand = getSharedPreferences(CONFIG_COMMAND_LIST, MODE_PRIVATE);
+        if (sharedPreferences.getString(CONFIG_PARAMETER_LIST, "").equals("")) {
+            ConfigParameter configParameterSTB = new ConfigParameter("STB", "Số thuê bao", 0, "(\\d){10}");
+            ConfigParameter configParameterSeriSIM = new ConfigParameter("SeriSIM", "Số seri SIM", 1, "(\\d){19}");
+            ConfigParameter configParameterPUK = new ConfigParameter("PUK", "PUK", 2, "(\\d){8}");
+            ConfigParameter configParameterPIN = new ConfigParameter("PIN", "PIN", 3, "(\\d){4}");
+            configParameterList = new ArrayList<>();
+            configParameterList.add(configParameterSTB);
+            configParameterList.add(configParameterSeriSIM);
+            configParameterList.add(configParameterPUK);
+            configParameterList.add(configParameterPIN);
+            String configJSON = new Gson().toJson(configParameterList);
+            sharedPreferences.edit().putString(CONFIG_PARAMETER_LIST, configJSON).apply();
         } else {
-            String configJSON = getSharedPreferences("config", MODE_PRIVATE).getString("config", "");
-            config = new Gson().fromJson(configJSON, Config.class);
+            String configParameterJSON = getSharedPreferences(CONFIG_PARAMETER_LIST, MODE_PRIVATE).getString(CONFIG_PARAMETER_LIST, "");
+            configParameterList = ConfigParameter.getListObjectFromString(configParameterJSON);
         }
+        if (sharedPreferencesCommand.getString(CONFIG_COMMAND_LIST, "").equals("")) {
+            Content content = new Content(Constant.CALL, "900", Constant.CONSTANT, null);
+            Command commandCall = new Command("Gọi 900", content);
+            content = new Content(Constant.SMS, "123;456", Constant.CONSTANT, "abcxyz");
+            Command commandSMS = new Command("Nhắn tin", content);
+            configCommandList = new ArrayList<>();
+            configCommandList.add(commandCall);
+            configCommandList.add(commandSMS);
+            content = new Content(Constant.CALL, "0", Constant.PARAMETER, null);
+            Command commandCall2 = new Command("Gọi 0", content);
+            configCommandList.add(commandCall2);
+            String commandJSON = new Gson().toJson(configCommandList);
+            sharedPreferencesCommand.edit().putString(CONFIG_COMMAND_LIST, commandJSON).apply();
+        } else {
+            String configCommandJSON = getSharedPreferences(CONFIG_COMMAND_LIST, MODE_PRIVATE).getString(CONFIG_COMMAND_LIST, "");
+            configCommandList = Command.getListObjectFromString(configCommandJSON);
+        }
+
     }
 
     private void initView() {
         mIvPickImage = findViewById(R.id.iv_pick_image);
-        mBtnCallActivate = findViewById(R.id.btn_call_activate);
-        mBtnSendMesage = findViewById(R.id.btn_send_mesage);
+        mBtnDoCommand = findViewById(R.id.btn_do_command);
         mRvSimInfo = findViewById(R.id.rv_sim_info);
         mIvPickImage.setOnClickListener(this);
-        mBtnCallActivate.setOnClickListener(this);
-        mBtnSendMesage.setOnClickListener(this);
+        mBtnDoCommand.setOnClickListener(this);
     }
 
     @Override
@@ -105,31 +126,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
                 startActivityForResult(intent, REQUEST_PICK_IMAGE);
                 break;
-            case R.id.btn_call_activate:
-                Intent intentCall = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + config.getPhoneNumberCall()));
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "Bạn chưa cấp quyền gọi điện cho ứng dụng để thực hiện chức năng này!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                startActivity(intentCall);
-                break;
-            case R.id.btn_send_mesage:
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "Bạn chưa cấp quyền gửi tin nhắn cho ứng dụng để thực hiện chức năng này!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                try {
-                    Intent intentSendMessage = new Intent(Intent.ACTION_VIEW, Uri.parse("smsto:"));
-                    intentSendMessage.putExtra("sms_body", config.getSmsContent());
-                    intentSendMessage.putExtra("address", Utils.convertSmsPhoneNumberToString(config.getSmsPhoneNumberList()));
-                    intentSendMessage.setType("vnd.android-dir/mms-sms");
-                    startActivity(intentSendMessage);
-                } catch (Exception e) {
-                    Toast.makeText(getApplicationContext(),
-                            "Gửi tin nhắn thất bại, vui lòng thử lại!",
-                            Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
-                }
+            case R.id.btn_do_command:
+                View v = LayoutInflater.from(this).inflate(R.layout.dialog_choose_command, null);
+                RecyclerView mRvChooseCommand = v.findViewById(R.id.rv_choose_command);
+                ChooseCommandAdapter adapter = new ChooseCommandAdapter(configCommandList, this);
+                RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+                DividerItemDecoration decoration = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
+                mRvChooseCommand.setAdapter(adapter);
+                mRvChooseCommand.setLayoutManager(layoutManager);
+                mRvChooseCommand.addItemDecoration(decoration);
+                AlertDialog alertDialog = new AlertDialog.Builder(this)
+                        .setTitle("Chọn hành động")
+                        .setView(v)
+                        .create();
+                alertDialog.show();
                 break;
         }
     }
@@ -152,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             @Override
                             public void onSuccess(FirebaseVisionText visionText) {
                                 mRvSimInfo.setVisibility(View.VISIBLE);
-                                SimInfo simInfo = getInfoSim(visionText);
+                                simInfo = getInfoSim(visionText);
                                 InfoRecyclerViewAdapter adapter = new InfoRecyclerViewAdapter(simInfo, MainActivity.this);
                                 RecyclerView.LayoutManager manager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.VERTICAL, false);
                                 mRvSimInfo.setLayoutManager(manager);
@@ -183,7 +193,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (item.getItemId()) {
             case R.id.mnConfig:
                 Intent intent = new Intent(this, ConfigActivity.class);
-                intent.putExtra("config", new Gson().toJson(config));
+                intent.putExtra(CONFIG_PARAMETER_LIST, new Gson().toJson(configParameterList));
+                intent.putExtra(CONFIG_COMMAND_LIST, new Gson().toJson(configCommandList));
                 startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
@@ -191,29 +202,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private SimInfo getInfoSim(FirebaseVisionText visionText) {
         SimInfo simInfo = new SimInfo();
-        Collections.sort(config.getScanPatternList(), new Comparator<ScanPattern>() {
+        Collections.sort(configParameterList, new Comparator<ConfigParameter>() {
             @Override
-            public int compare(ScanPattern s0, ScanPattern s1) {
-                String str0 = s0.getValue().substring(s0.getValue().indexOf("{") + 1, s0.getValue().indexOf("}"));
-                String str1 = s1.getValue().substring(s1.getValue().indexOf("{") + 1, s1.getValue().indexOf("}"));
+            public int compare(ConfigParameter c0, ConfigParameter c1) {
+                String str0 = c0.getPattern().substring(c0.getPattern().indexOf("{") + 1, c0.getPattern().indexOf("}"));
+                String str1 = c1.getPattern().substring(c1.getPattern().indexOf("{") + 1, c1.getPattern().indexOf("}"));
                 return Integer.parseInt(str1) - Integer.parseInt(str0);
             }
         });
         for (FirebaseVisionText.TextBlock block : visionText.getTextBlocks()) {
             for (FirebaseVisionText.Line line : block.getLines()) {
-                for (int i = 0; i < config.getScanPatternList().size(); i++) {
-                    Pattern pattern = Pattern.compile(config.getScanPatternList().get(i).getValue());
+                for (int i = 0; i < configParameterList.size(); i++) {
+                    Pattern pattern = Pattern.compile(configParameterList.get(i).getPattern());
                     Matcher matcher = pattern.matcher(line.getText());
                     if (matcher.find()) {
                         String info = matcher.group(0);
                         ArrayList<String> infoList;
-                        if (simInfo.getMapInfo().get(config.getScanPatternList().get(i).getKey()) == null) {
+                        if (simInfo.getMapInfo().get(configParameterList.get(i)) == null) {
                             infoList = new ArrayList<>();
                         } else {
-                            infoList = simInfo.getMapInfo().get(config.getScanPatternList().get(i).getKey());
+                            infoList = simInfo.getMapInfo().get(configParameterList.get(i));
                         }
                         infoList.add(info);
-                        simInfo.getMapInfo().put(config.getScanPatternList().get(i).getKey(), infoList);
+                        simInfo.getMapInfo().put(configParameterList.get(i), infoList);
                         break;
                     }
                 }
@@ -232,5 +243,83 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, listChoice);
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_list_item_single_choice);
         return arrayAdapter;
+    }
+
+    @Override
+    public void onItemClick(int position) {
+        Content cmd = configCommandList.get(position).getContent();
+        if (cmd.getAction().equalsIgnoreCase(Constant.CALL)) {
+            if (cmd.getType().equalsIgnoreCase(Constant.PARAMETER)) {
+                if (simInfo == null) {
+                    Toast.makeText(this, "Cần quét ảnh để lấy thông tin trước", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+//                Toast.makeText(this, "" + subCmd[1].substring(1), Toast.LENGTH_SHORT).show();
+                ConfigParameter configParameter = getConfigParameterByPosition(configParameterList, Integer.parseInt(cmd.getDestination()));
+                if (configParameter != null) {
+//                    Toast.makeText(this, "" + configParameter.toString(), Toast.LENGTH_SHORT).show();
+                    ArrayList<String> telList = simInfo.getMapInfo().get(configParameter);
+                    if (telList != null) {
+                        call(telList.get(0));
+                    } else {
+//                        Toast.makeText(this, "tellList is null", Toast.LENGTH_SHORT).show();
+                        TextView tv = findViewById(R.id.tv_map);
+                        tv.setText(simInfo.getMapInfo().toString());
+                    }
+                } else {
+                    Toast.makeText(this, "Position trong config không tồn tại", Toast.LENGTH_SHORT).show();
+                }
+
+            } else if (cmd.getType().equalsIgnoreCase(Constant.CONSTANT)) {
+                call(cmd.getDestination());
+            }
+        } else if (cmd.getAction().equalsIgnoreCase(Constant.SMS)) {
+            if (cmd.getType().equalsIgnoreCase(Constant.PARAMETER)) {
+
+            } else if (cmd.getType().equalsIgnoreCase(Constant.CONSTANT)) {
+                sendSMS(cmd.getSmsBody(), cmd.getDestination());
+            }
+        } else {
+            Toast.makeText(this, "Lệnh không phù hợp, không thể thực thi!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void call (String tel) {
+        Intent intentCall = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + tel));
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Bạn chưa cấp quyền gọi điện cho ứng dụng để thực hiện chức năng này!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        startActivity(intentCall);
+    }
+
+    private void sendSMS (String body, String addresses) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Bạn chưa cấp quyền gửi tin nhắn cho ứng dụng để thực hiện chức năng này!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            Intent intentSendMessage = new Intent(Intent.ACTION_VIEW);
+            intentSendMessage.putExtra("sms_body", body);
+            intentSendMessage.putExtra("address", addresses);
+            intentSendMessage.setType("vnd.android-dir/mms-sms");
+            startActivity(intentSendMessage);
+        } catch (Exception e) {
+            Toast.makeText(getApplicationContext(),
+                    "Gửi tin nhắn thất bại, vui lòng thử lại!",
+                    Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
+    }
+
+    private ConfigParameter getConfigParameterByPosition (List<ConfigParameter> configParameterList, int position) {
+        for (ConfigParameter configParameter: configParameterList) {
+            if (configParameter.getPosition() == position) {
+//                Toast.makeText(this, "" + configParameter.toString(), Toast.LENGTH_SHORT).show();
+                return configParameter;
+            }
+        }
+        Toast.makeText(this, "Cannot find config parameter with position " + position, Toast.LENGTH_SHORT).show();
+        return null;
     }
 }

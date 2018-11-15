@@ -5,20 +5,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SimInfo {
-    private Map<String, ArrayList<String>> mapInfo;
+    private Map<ConfigParameter, ArrayList<String>> mapInfo;
 
     public SimInfo() {
         mapInfo = new HashMap<>();
     }
 
-    public SimInfo(ArrayList<String> soThueBao, ArrayList<String> soSeriSIM, ArrayList<String> puk, ArrayList<String> pin) {
-    }
-
-    public Map<String, ArrayList<String>> getMapInfo() {
+    public Map<ConfigParameter, ArrayList<String>> getMapInfo() {
         return mapInfo;
     }
 
-    public void setMapInfo(Map<String, ArrayList<String>> mapInfo) {
+    public void setMapInfo(Map<ConfigParameter, ArrayList<String>> mapInfo) {
         this.mapInfo = mapInfo;
     }
 
