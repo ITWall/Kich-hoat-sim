@@ -14,4 +14,5 @@
     <string name="wrong_name_pattern">Tên pattern không được rỗng</string>
     <string name="wrong_config">Sai định dạng config</string>
     <string name="do_command">Thực hiện</string>
+    <string name="choose">Chọn ảnh</string>
 </resources>
