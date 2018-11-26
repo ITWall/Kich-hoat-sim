@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -48,7 +49,7 @@ import uk.co.senab.photoview.PhotoView;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnItemClick {
-    private ImageView mIvPickImage;
+    private PhotoView mIvPickImage;
     private RecyclerView mRvSimInfo;
     private static final int REQUEST_PICK_IMAGE = 232;
     private static final int REQUEST_PERMISSION = 10;
@@ -58,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public static final String CONFIG_PARAMETER_LIST = "ConfigParameterList";
     public static final String CONFIG_COMMAND_LIST = "ConfigCommandList";
     private SimInfo simInfo;
-    org.apache.log4j.Logger log;
+//    org.apache.log4j.Logger log;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +69,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{Manifest.permission.CALL_PHONE, Manifest.permission.SEND_SMS}, REQUEST_PERMISSION);
         }
-        log = Log4jHelper.getLogger("MainActivity");
+//        log = Log4jHelper.getLogger("MainActivity");
     }
 
     @Override
@@ -122,8 +123,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mRvSimInfo = findViewById(R.id.rv_sim_info);
         mIvPickImage.setOnClickListener(this);
         mBtnDoCommand.setOnClickListener(this);
-        PhotoViewAttacher photoViewAttacher = new PhotoViewAttacher(mIvPickImage);
-        photoViewAttacher.update();
+//        PhotoViewAttacher photoViewAttacher = new PhotoViewAttacher(mIvPickImage);
+//        photoViewAttacher.update();
     }
 
     @Override
@@ -151,8 +152,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        log.info("onActivityResult");
-        log.info("resultCode: " + resultCode);
+//        log.info("onActivityResult");
+//        log.info("resultCode: " + resultCode);
 
         try {
             if (resultCode == RESULT_OK) {
@@ -160,10 +161,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (data != null) {
                         Uri uri = data.getData();
                         try {
-                            log.info("data: " + data);
+//                            log.info("data: " + data);
                             Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
-                            log.info("bitmap: " + bitmap);
-                            log.info("bitmap height 2: " + bitmap.getWidth() + " - " + bitmap.getHeight());
+//                            log.info("bitmap: " + bitmap);
+//                            log.info("bitmap height 2: " + bitmap.getWidth() + " - " + bitmap.getHeight());
 //                        getAllText(bitmap, 0);
 //                            bitmap = rotateBitmap(bitmap, 90);
                             mIvPickImage.setImageBitmap(bitmap);
@@ -176,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 textRecognizer.processImage(image).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
                                     @Override
                                     public void onSuccess(FirebaseVisionText visionText) {
-                                        log.info("vision text: " + visionText);
+//                                        log.info("vision text: " + visionText);
                                         mRvSimInfo.setVisibility(View.VISIBLE);
                                         Toast.makeText(MainActivity.this, ""+visionText.getText(), Toast.LENGTH_SHORT).show();
                                         simInfo = getInfoSim(visionText);
@@ -184,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         RecyclerView.LayoutManager manager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.VERTICAL, false);
                                         mRvSimInfo.setLayoutManager(manager);
                                         mRvSimInfo.setAdapter(adapter);
-                                        log.info(visionText.getText());
+//                                        log.info(visionText.getText());
 //                                log.info("Info");
 //                                log.warn("Warn");
                                     }
@@ -195,18 +196,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     }
                                 });
                             }
-                            log.info("bitmap: " + bitmap.getHeight());
+//                            log.info("bitmap: " + bitmap.getHeight());
                         } catch (IOException e) {
-                            log.info(e.getMessage());
+//                            log.info(e.getMessage());
                             e.printStackTrace();
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            log.error(e.getMessage());
+//            log.error(e.getMessage());
         }
-        log.info("___onActivityResult");
+//        log.info("___onActivityResult");
     }
 
     @Override
@@ -223,10 +224,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 intent.putExtra(CONFIG_PARAMETER_LIST, new Gson().toJson(configParameterList));
                 intent.putExtra(CONFIG_COMMAND_LIST, new Gson().toJson(configCommandList));
                 startActivity(intent);
+                break;
             case R.id.mnChoose:
                 Intent intentChoose = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
                 startActivityForResult(intentChoose, REQUEST_PICK_IMAGE);
-                log.info("Pick image");
+//                log.info("Pick image");
                 break;
 
         }
@@ -374,6 +376,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         text += textLine + "\n";
                     }
                 }
+                Log.e("Text Recognition", text);
                 Toast.makeText(MainActivity.this, degree + " " + text, Toast.LENGTH_SHORT).show();
                 int copyDegree = degree + 90;
                 getAllText(finalBitmap, copyDegree);
