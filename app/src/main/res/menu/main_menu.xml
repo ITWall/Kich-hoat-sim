@@ -9,4 +9,8 @@
         android:title="@string/config"
         android:icon="@android:drawable/ic_menu_manage"
         app:showAsAction="ifRoom"/>
+    <item android:id="@+id/mnDoCommand"
+        android:title="@string/do_command"
+        android:icon="@android:drawable/ic_menu_send"
+        app:showAsAction="ifRoom"/>
 </menu>

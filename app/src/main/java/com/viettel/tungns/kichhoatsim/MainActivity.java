@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private RecyclerView mRvSimInfo;
     private static final int REQUEST_PICK_IMAGE = 232;
     private static final int REQUEST_PERMISSION = 10;
-    private Button mBtnDoCommand;
+//    private Button mBtnDoCommand;
     private List<ConfigParameter> configParameterList;
     private List<Command> configCommandList;
     public static final String CONFIG_PARAMETER_LIST = "ConfigParameterList";
@@ -119,10 +119,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initView() {
         mIvPickImage = findViewById(R.id.iv_pick_image);
-        mBtnDoCommand = findViewById(R.id.btn_do_command);
+//        mBtnDoCommand = findViewById(R.id.btn_do_command);
         mRvSimInfo = findViewById(R.id.rv_sim_info);
         mIvPickImage.setOnClickListener(this);
-        mBtnDoCommand.setOnClickListener(this);
+//        mBtnDoCommand.setOnClickListener(this);
 //        PhotoViewAttacher photoViewAttacher = new PhotoViewAttacher(mIvPickImage);
 //        photoViewAttacher.update();
     }
@@ -132,21 +132,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (view.getId()) {
             case R.id.iv_pick_image:
 
-            case R.id.btn_do_command:
-                View v = LayoutInflater.from(this).inflate(R.layout.dialog_choose_command, null);
-                RecyclerView mRvChooseCommand = v.findViewById(R.id.rv_choose_command);
-                ChooseCommandAdapter adapter = new ChooseCommandAdapter(configCommandList, this);
-                RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
-                DividerItemDecoration decoration = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
-                mRvChooseCommand.setAdapter(adapter);
-                mRvChooseCommand.setLayoutManager(layoutManager);
-                mRvChooseCommand.addItemDecoration(decoration);
-                AlertDialog alertDialog = new AlertDialog.Builder(this)
-                        .setTitle("Chọn hành động")
-                        .setView(v)
-                        .create();
-                alertDialog.show();
-                break;
+//            case R.id.btn_do_command:
+
         }
     }
 
@@ -167,6 +154,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                            log.info("bitmap height 2: " + bitmap.getWidth() + " - " + bitmap.getHeight());
 //                        getAllText(bitmap, 0);
 //                            bitmap = rotateBitmap(bitmap, 90);
+                            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT){
+                                if (bitmap.getWidth() > 720 || bitmap.getHeight() > 1280) {
+                                    Toast.makeText(this, "Kích thước ảnh " + bitmap.getWidth() + " - " + bitmap.getHeight() + " quá to, hãy thu nhỏ ảnh lại!", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                            }
                             mIvPickImage.setImageBitmap(bitmap);
                             if (bitmap.getWidth() > bitmap.getHeight()) {
                                 Toast.makeText(this, "Hãy xoay lại ảnh", Toast.LENGTH_SHORT).show();
@@ -229,6 +222,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Intent intentChoose = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
                 startActivityForResult(intentChoose, REQUEST_PICK_IMAGE);
 //                log.info("Pick image");
+                break;
+            case R.id.mnDoCommand:
+                View v = LayoutInflater.from(this).inflate(R.layout.dialog_choose_command, null);
+                RecyclerView mRvChooseCommand = v.findViewById(R.id.rv_choose_command);
+                ChooseCommandAdapter adapter = new ChooseCommandAdapter(configCommandList, this);
+                RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+                DividerItemDecoration decoration = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
+                mRvChooseCommand.setAdapter(adapter);
+                mRvChooseCommand.setLayoutManager(layoutManager);
+                mRvChooseCommand.addItemDecoration(decoration);
+                AlertDialog alertDialog = new AlertDialog.Builder(this)
+                        .setTitle("Chọn hành động")
+                        .setView(v)
+                        .create();
+                alertDialog.show();
                 break;
 
         }
@@ -297,9 +305,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (telList != null) {
                         call(telList.get(0));
                     } else {
-//                        Toast.makeText(this, "tellList is null", Toast.LENGTH_SHORT).show();
-                        TextView tv = findViewById(R.id.tv_map);
-                        tv.setText(simInfo.getMapInfo().toString());
+                        Toast.makeText(this, "tellList is null", Toast.LENGTH_SHORT).show();
+//                        TextView tv = findViewById(R.id.tv_map);
+//                        tv.setText(simInfo.getMapInfo().toString());
                     }
                 } else {
                     Toast.makeText(this, "Position trong config không tồn tại", Toast.LENGTH_SHORT).show();
