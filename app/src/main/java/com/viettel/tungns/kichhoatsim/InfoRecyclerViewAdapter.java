@@ -1,11 +1,13 @@
 package com.viettel.tungns.kichhoatsim;
 
 import android.content.Context;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -44,9 +46,18 @@ public class InfoRecyclerViewAdapter extends RecyclerView.Adapter<InfoRecyclerVi
     }
 
     @Override
-    public void onBindViewHolder(InfoRecyclerViewAdapter.ViewHolder holder, final int position) {
+    public void onBindViewHolder(final InfoRecyclerViewAdapter.ViewHolder holder, final int position) {
         holder.mTvNameInfo.setText(listKey.get(position).getName());
         holder.mSpnContentInfo.setAdapter(getAdapterSpinner(simInfo.getMapInfo().get(listKey.get(position))));
+        holder.btnEditContentInfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (context instanceof OnButtonEditClickListener) {
+                    OnButtonEditClickListener onButtonEditClickListener = (OnButtonEditClickListener) context;
+                    onButtonEditClickListener.onButtonEditClick(position);
+                }
+            }
+        });
     }
 
     @Override
@@ -57,11 +68,13 @@ public class InfoRecyclerViewAdapter extends RecyclerView.Adapter<InfoRecyclerVi
     class ViewHolder extends RecyclerView.ViewHolder {
         TextView mTvNameInfo;
         Spinner mSpnContentInfo;
+        Button btnEditContentInfo;
 
         public ViewHolder(View itemView) {
             super(itemView);
             mTvNameInfo = itemView.findViewById(R.id.tv_name_info);
             mSpnContentInfo = itemView.findViewById(R.id.spn_content_info);
+            btnEditContentInfo = itemView.findViewById(R.id.btn_edit_content_info);
         }
     }
 

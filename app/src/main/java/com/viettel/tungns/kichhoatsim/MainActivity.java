@@ -1,6 +1,7 @@
 package com.viettel.tungns.kichhoatsim;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -25,6 +26,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,18 +44,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import uk.co.senab.photoview.PhotoView;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnItemClick {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnItemClick, OnButtonEditClickListener {
     private PhotoView mIvPickImage;
     private RecyclerView mRvSimInfo;
     private static final int REQUEST_PICK_IMAGE = 232;
     private static final int REQUEST_PERMISSION = 10;
-//    private Button mBtnDoCommand;
+    //    private Button mBtnDoCommand;
     private List<ConfigParameter> configParameterList;
     private List<Command> configCommandList;
     public static final String CONFIG_PARAMETER_LIST = "ConfigParameterList";
@@ -154,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                            log.info("bitmap height 2: " + bitmap.getWidth() + " - " + bitmap.getHeight());
 //                        getAllText(bitmap, 0);
 //                            bitmap = rotateBitmap(bitmap, 90);
-                            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT){
+                            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
                                 if (bitmap.getWidth() > 720 || bitmap.getHeight() > 1280) {
                                     Toast.makeText(this, "Kích thước ảnh " + bitmap.getWidth() + " - " + bitmap.getHeight() + " quá to, hãy thu nhỏ ảnh lại!", Toast.LENGTH_SHORT).show();
                                     return;
@@ -172,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     public void onSuccess(FirebaseVisionText visionText) {
 //                                        log.info("vision text: " + visionText);
                                         mRvSimInfo.setVisibility(View.VISIBLE);
-                                        Toast.makeText(MainActivity.this, ""+visionText.getText(), Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(MainActivity.this, "" + visionText.getText(), Toast.LENGTH_SHORT).show();
                                         simInfo = getInfoSim(visionText);
                                         InfoRecyclerViewAdapter adapter = new InfoRecyclerViewAdapter(simInfo, MainActivity.this);
                                         RecyclerView.LayoutManager manager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.VERTICAL, false);
@@ -327,7 +330,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void call (String tel) {
+    private void call(String tel) {
         Intent intentCall = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + tel));
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, "Bạn chưa cấp quyền gọi điện cho ứng dụng để thực hiện chức năng này!", Toast.LENGTH_SHORT).show();
@@ -336,7 +339,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startActivity(intentCall);
     }
 
-    private void sendSMS (String body, String addresses) {
+    private void sendSMS(String body, String addresses) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, "Bạn chưa cấp quyền gửi tin nhắn cho ứng dụng để thực hiện chức năng này!", Toast.LENGTH_SHORT).show();
             return;
@@ -355,8 +358,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private ConfigParameter getConfigParameterByPosition (List<ConfigParameter> configParameterList, int position) {
-        for (ConfigParameter configParameter: configParameterList) {
+    private ConfigParameter getConfigParameterByPosition(List<ConfigParameter> configParameterList, int position) {
+        for (ConfigParameter configParameter : configParameterList) {
             if (configParameter.getPosition() == position) {
 //                Toast.makeText(this, "" + configParameter.toString(), Toast.LENGTH_SHORT).show();
                 return configParameter;
@@ -395,5 +398,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 e.printStackTrace();
             }
         });
+    }
+
+    @Override
+    public void onButtonEditClick(final int position) {
+        final ArrayList<ConfigParameter> listKey = new ArrayList<>();
+        for (Map.Entry entry : simInfo.getMapInfo().entrySet()) {
+            listKey.add((ConfigParameter) entry.getKey());
+        }
+        Collections.sort(listKey, new Comparator<ConfigParameter>() {
+            @Override
+            public int compare(ConfigParameter c0, ConfigParameter c1) {
+                return c0.getPosition() - c1.getPosition();
+            }
+        });
+        View viewDialog = LayoutInflater.from(this).inflate(R.layout.dialog_edit_sim_info, null);
+        final EditText mEdtEditSimInfo = viewDialog.findViewById(R.id.edt_edit_sim_info);
+        mEdtEditSimInfo.setText(simInfo.getMapInfo().get(listKey.get(position)).get(0));
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setView(viewDialog)
+                .setTitle(R.string.edit_info)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Write your code here to execute after dialog closed
+//                        Toast.makeText(getApplicationContext(), "You clicked on OK\n" + mEdtEditSimInfo.getText().toString(), Toast.LENGTH_SHORT).show();
+                        ArrayList<String> newArray = new ArrayList<>();
+                        newArray.add(mEdtEditSimInfo.getText().toString());
+                        simInfo.getMapInfo().put(listKey.get(position), newArray);
+                        mRvSimInfo.getAdapter().notifyDataSetChanged();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Write your code here to execute after dialog closed
+                        Toast.makeText(getApplicationContext(), "You clicked on Cancel", Toast.LENGTH_SHORT).show();
+                    }
+                });
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+
     }
 }

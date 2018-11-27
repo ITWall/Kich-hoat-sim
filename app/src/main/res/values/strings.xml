@@ -16,4 +16,5 @@
     <string name="do_command">Thực hiện</string>
     <string name="choose">Chọn ảnh</string>
     <string name="edit">Edit</string>
+    <string name="edit_info">Chỉnh sửa thông tin</string>
 </resources>
